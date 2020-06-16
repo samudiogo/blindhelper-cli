@@ -1,5 +1,9 @@
 const AWS = require('aws-sdk');
 const util = require('util');
+const path = require('path');
+
+const myPackage = require('../../package.json');
+
 const {
     kMaxLength
 } = require('buffer');
@@ -38,11 +42,12 @@ class S3Service {
         //convert the filePath into a buffer
 
         const fileBuffer = await readFile(filePath);
+        const key = path.basename(filePath);
 
         const params = {
             Bucket: bucket,
             Body: fileBuffer,
-            Key: 'image-demo.jpeg',
+            Key: key,
         };
 
 
@@ -50,9 +55,11 @@ class S3Service {
             Bucket,
             Key
         } = await this._s3Service.upload(params).promise();
-        const labels = await this.detectLabels(Bucket, Key);
 
-        return labels;
+        return {
+            Bucket,
+            fileName: Key
+        };
     }
 
     async detectLabels(bucket, name) {
@@ -60,7 +67,7 @@ class S3Service {
         return await
         //  this._rekoService
         new AWS.Rekognition({
-                region: 'us-east-1'
+                region: myPackage.aws.region
             })
             .detectLabels({
 
@@ -77,7 +84,7 @@ class S3Service {
 const myS3Service = new S3Service({
     s3Svc: new AWS.S3(),
     rekoSvc: new AWS.Rekognition({
-        region: 'us-east-1'
+        region: myPackage.aws.region
     }),
 });
 
